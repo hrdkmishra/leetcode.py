@@ -1,6 +1,6 @@
 <img height="250" src="./images/test.png" width="800"/>
 
-> >>> **_leetcode.py_** is a Python command-line tool that simplifies your LeetCode journey by providing a seamless interface to access and solve LeetCode problems effortlessly.
+> **_leetcode.py_** is a Python command-line tool that simplifies your LeetCode journey by providing a seamless interface to access and solve LeetCode problems effortlessly.
 
 ## Features
 
@@ -32,13 +32,11 @@ to fetch the problem
 python leetcode.py -q/--question <question_number>
 ```
 ![img_1.png](images/img_1.png)
-
 to fetch problems in range
 ```
 python leetcode.py -q/--question <question_number>:<question_number>
 ```
 ![](C:\Users\hardik\Downloads\image.png)
-
 to solve the problem
 ```
 python leetcode.py -s/--solve <question_number>
