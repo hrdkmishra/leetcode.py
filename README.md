@@ -38,7 +38,6 @@ to fetch problems in range
 python leetcode.py -q/--question <question_number>:<question_number>
 ```
 ![](C:\Users\hardik\Downloads\image.png)
-
 to solve the problem
 ```
 python leetcode.py -s/--solve <question_number>
