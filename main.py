@@ -9,7 +9,8 @@ from config_setup import (
     save_credentials_to_config,
     load_credentials_from_config,
 )
-
+import leetcode
+import leetcode.auth
 import requests
 
 
@@ -62,13 +63,13 @@ def execute_graphql_query(api_instance, data):
     headers = {
         "Content-Type": "application/json",
         "Cookie": f"csrftoken={csrf_token}; LEETCODE_SESSION={leetcode_session}",
-        "Referer": "https://leetcode.com"
+        "Referer": "https://leetcode.com",
     }
 
     data = {
         "operationName": data.get("operationName"),
         "query": data.get("query"),
-        "variables": data.get("variables")
+        "variables": data.get("variables"),
     }
 
     response = requests.post(api_url, json=data, headers=headers)
@@ -132,18 +133,22 @@ def get_question_data_by_id(api_instance, q):
         "categorySlug": "",
         "skip": skip,
         "limit": limit,
-        "filters": filters
+        "filters": filters,
     }
 
     data = {
         "operationName": "problemsetQuestionList",
         "query": query,
-        "variables": query_variables
+        "variables": query_variables,
     }
 
     api_response = execute_graphql_query(api_instance, data)
 
-    if api_response and "data" in api_response and "problemsetQuestionList" in api_response["data"]:
+    if (
+        api_response
+        and "data" in api_response
+        and "problemsetQuestionList" in api_response["data"]
+    ):
         return api_response["data"]["problemsetQuestionList"]["questions"]
     return None
 
@@ -217,7 +222,7 @@ def get_question_detail(api_instance, title_slug):
     data = {
         "operationName": "getQuestionDetail",
         "query": query,
-        "variables": query_variables
+        "variables": query_variables,
     }
 
     api_response = execute_graphql_query(api_instance, data)
@@ -228,31 +233,38 @@ def get_question_detail(api_instance, title_slug):
 
 
 LANG_EXTENSIONS = {
-    'cpp': 'cpp',
-    'java': 'java',
-    'python': 'py',
-    'python3': 'py',
-    'c': 'c',
-    'csharp': 'cs',
-    'javascript': 'js',
-    'ruby': 'rb',
-    'swift': 'swift',
-    'golang': 'go',
-    'scala': 'scala',
-    'kotlin': 'kt',
-    'rust': 'rs',
-    'php': 'php',
-    'typescript': 'ts',
-    'racket': 'rkt',
-    'erlang': 'erl',
-    'elixir': 'ex',
-    'dart': 'dart'
+    "cpp": "cpp",
+    "java": "java",
+    "python": "py",
+    "python3": "py",
+    "c": "c",
+    "csharp": "cs",
+    "javascript": "js",
+    "ruby": "rb",
+    "swift": "swift",
+    "golang": "go",
+    "scala": "scala",
+    "kotlin": "kt",
+    "rust": "rs",
+    "php": "php",
+    "typescript": "ts",
+    "racket": "rkt",
+    "erlang": "erl",
+    "elixir": "ex",
+    "dart": "dart",
 }
 
 
 def get_code_snippets(question_detail_data, lang_slug):
     code_snippets = question_detail_data.get("codeSnippets", [])
-    return next((snippet['code'] for snippet in code_snippets if snippet['langSlug'] == lang_slug), None)
+    return next(
+        (
+            snippet["code"]
+            for snippet in code_snippets
+            if snippet["langSlug"] == lang_slug
+        ),
+        None,
+    )
 
 
 def write_code_snippet_to_file(question_detail_data, lang, title_slug):
@@ -260,8 +272,10 @@ def write_code_snippet_to_file(question_detail_data, lang, title_slug):
     if code:
         lang_extension = LANG_EXTENSIONS.get(lang)
         if lang_extension:
-            file_path = os.path.join("code_editor",
-                                     f"{question_detail_data['questionFrontendId']}_{title_slug}.{lang_extension}")
+            file_path = os.path.join(
+                "code_editor",
+                f"{question_detail_data['questionFrontendId']}_{title_slug}.{lang_extension}",
+            )
             with open(file_path, "w") as file:
                 file.write(code)
             print(f"Code snippet for {lang} has been written to {file_path}.")
@@ -272,12 +286,12 @@ def write_code_snippet_to_file(question_detail_data, lang, title_slug):
 
 
 def display_available_languages(question_detail_data):
-    code_snippets = question_detail_data.get('codeSnippets', [])
+    code_snippets = question_detail_data.get("codeSnippets", [])
     if code_snippets:
         print("Available Languages:")
         for index, snippet in enumerate(code_snippets):
-            lang_slug = snippet.get('langSlug')
-            lang_name = snippet.get('text') or lang_slug
+            lang_slug = snippet.get("langSlug")
+            lang_name = snippet.get("text") or lang_slug
             print(f"{index + 1}. {lang_name} ({lang_slug})")
     else:
         print("No code snippets available.")
@@ -295,19 +309,25 @@ def display_question_detail(api_instance, title_slug):
 
         display_available_languages(question_detail_data)
 
-        lang_input = input("Enter the index of the language you want to code: ").strip().lower()
+        lang_input = (
+            input("Enter the index of the language you want to code: ").strip().lower()
+        )
         try:
             lang_index = int(lang_input)
-            if 1 <= lang_index <= len(question_detail_data.get('codeSnippets', [])):
-                selected_lang = question_detail_data['codeSnippets'][lang_index - 1]['langSlug']
-                write_code_snippet_to_file(question_detail_data, selected_lang, title_slug)
+            if 1 <= lang_index <= len(question_detail_data.get("codeSnippets", [])):
+                selected_lang = question_detail_data["codeSnippets"][lang_index - 1][
+                    "langSlug"
+                ]
+                write_code_snippet_to_file(
+                    question_detail_data, selected_lang, title_slug
+                )
             else:
                 print("Invalid index. Please enter a valid index.")
         except ValueError:
             print("Invalid input. Please enter a valid index.")
 
 
-def configuration():
+def configuratio(): #had to change name becasue of python-leetcode lib
     leetcode_session, csrf_token = load_credentials_from_config()
     if not leetcode_session or not csrf_token:
         leetcode_session = click.prompt("Enter your LeetCode session", type=str)
@@ -319,37 +339,38 @@ def configuration():
 def get_title_slug_from_filename(filepath):
     base_name = os.path.basename(filepath)
     title_slug, _ = os.path.splitext(base_name)
-    parts = title_slug.split('_')
+    parts = title_slug.split("_")
     return "_".join(parts[1:])
 
 
-def interpret_solution(api_instance, title_slug, payload):
-    csrf_token, leetcode_session = api_instance
+def interpret_solution(title_slug, payload, api_instance):
+    test_submission = leetcode.TestSubmission(
+        data_input=payload["data_input"],
+        typed_code=payload["typed_code"],
+        question_id=payload["question_id"],
+        test_mode=False,
+        lang="python3",
+    )
+    interpretation_id = api_instance.problems_problem_interpret_solution_post(
+        problem=title_slug, body=test_submission
+    )
 
-    api_url = f"https://leetcode.com/problems/{title_slug}/interpret_solution/"
+    print("Test has been queued. Result:")
+    print(interpretation_id)
 
-    headers = {
-        "User-Agent": "curl/8.0.1",
-        "Host": "leetcode.com",
-        "Accept": "*/*",
-        "content-type": "application/json",
-        "Origin": "https://leetcode.com",
-        "Content-Type": "application/json",
-        "Referer": f"https://leetcode.com/problems/{title_slug}/",
-        "x-csrftoken": csrf_token,
-        "Cookie": f"LEETCODE_SESSION={leetcode_session};csrftoken={csrf_token};"
-    }
 
-    response = requests.post(api_url, json=payload, headers=headers)
+def initialize_leetcode_api_instance(leetcode_session):
+    configuration = leetcode.Configuration()
+    csrf_token = leetcode.auth.get_csrf_cookie(leetcode_session)
 
-    time.sleep(10)
+    configuration.api_key["x-csrftoken"] = csrf_token
+    configuration.api_key["csrftoken"] = csrf_token
+    configuration.api_key["LEETCODE_SESSION"] = leetcode_session
+    configuration.api_key["Referer"] = "https://leetcode.com"
+    configuration.debug = False
 
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"Interpret solution request failed with status code {response.status_code}:")
-        print(response.text)
-        return None
+    api_instance = leetcode.DefaultApi(leetcode.ApiClient(configuration))
+    return api_instance
 
 
 @click.command()
@@ -361,13 +382,23 @@ def interpret_solution(api_instance, title_slug, payload):
     default="",
     help="Specify the question ID, title, or range (e.g., 10:20)",
 )
-@click.option("--solve", "-s", type=str, default="",
-              help="Specify the question title slug to solve (e.g., add-two-numbers)")
-@click.option("--test", "-t", type=str, default="",
-              help="Specify the filename containing the code and input for testing")
+@click.option(
+    "--solve",
+    "-s",
+    type=str,
+    default="",
+    help="Specify the question title slug to solve (e.g., add-two-numbers)",
+)
+@click.option(
+    "--test",
+    "-t",
+    type=str,
+    default="",
+    help="Specify the filename containing the code and input for testing",
+)
 def main(config, question, solve, test):
     if config:
-        leetcode_session, csrf_token = configuration()
+        leetcode_session, csrf_token = configuratio()
     else:
         leetcode_session, csrf_token = load_credentials_from_config()
 
@@ -379,12 +410,17 @@ def main(config, question, solve, test):
     elif question:
         question_data = get_question_data_by_id(api_instance, question)
         if question_data:
-            sorted_question_data = sorted(question_data, key=lambda x: int(x["frontendQuestionId"]))
+            sorted_question_data = sorted(
+                question_data, key=lambda x: int(x["frontendQuestionId"])
+            )
             for question_item in sorted_question_data:
                 print_question_data(question_item)
         else:
             print(f"Question with ID or title '{question}' not found.")
     elif test:
+        leetcode_api_instance = initialize_leetcode_api_instance(
+            leetcode_session
+        )  # here using python-leetcode
         print(f"Test file: {test}")
         title_slug = get_title_slug_from_filename(test)
         print(f"Title slug: {title_slug}")
@@ -402,18 +438,10 @@ def main(config, question, solve, test):
                 "lang": "python3",
                 "question_id": question_id,
                 "typed_code": code,
-                "data_input": sample_test_case
+                "data_input": sample_test_case,
             }
 
-            json_payload = json.dumps(payload, indent=4)  # Convert payload to JSON string
-            print(json_payload)
-
-            result = interpret_solution(api_instance, title_slug, json_payload)
-            if result and "interpret_id" in result:
-                interpret_id = result["interpret_id"]
-                print(f"Interpret ID: {interpret_id}")
-            else:
-                print("Interpret solution failed.")
+            interpret_solution(title_slug, payload, leetcode_api_instance)  # used here
         else:
             print(f"Question with title slug '{title_slug}' not found.")
 
