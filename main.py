@@ -358,6 +358,15 @@ def interpret_solution(title_slug, payload, api_instance):
     print("Test has been queued. Result:")
     print(interpretation_id)
 
+    time.sleep(5)  # FIXME: should probably be a busy-waiting loop
+
+    test_submission_result = api_instance.submissions_detail_id_check_get(
+        id=interpretation_id.interpret_id
+    )
+
+    print("Got test result:")
+    print(leetcode.TestSubmissionResult(**test_submission_result))
+
 
 def initialize_leetcode_api_instance(leetcode_session):
     configuration = leetcode.Configuration()
