@@ -1,9 +1,7 @@
-import json
 import os
 import time
 import click
 from bs4 import BeautifulSoup
-
 from color import Colors
 from config_setup import (
     save_credentials_to_config,
@@ -145,9 +143,9 @@ def get_question_data_by_id(api_instance, q):
     api_response = execute_graphql_query(api_instance, data)
 
     if (
-        api_response
-        and "data" in api_response
-        and "problemsetQuestionList" in api_response["data"]
+            api_response
+            and "data" in api_response
+            and "problemsetQuestionList" in api_response["data"]
     ):
         return api_response["data"]["problemsetQuestionList"]["questions"]
     return None
@@ -327,7 +325,7 @@ def display_question_detail(api_instance, title_slug):
             print("Invalid input. Please enter a valid index.")
 
 
-def configuratio(): #had to change name becasue of python-leetcode lib
+def non_lib_configuration():  # had to change name becasue of python-leetcode lib
     leetcode_session, csrf_token = load_credentials_from_config()
     if not leetcode_session or not csrf_token:
         leetcode_session = click.prompt("Enter your LeetCode session", type=str)
@@ -343,7 +341,12 @@ def get_title_slug_from_filename(filepath):
     return "_".join(parts[1:])
 
 
-def interpret_solution(title_slug, payload, api_instance):
+# --test
+
+
+def interpret_solution(
+        title_slug, payload, api_instance
+):  # used python-leetocde library
     test_submission = leetcode.TestSubmission(
         data_input=payload["data_input"],
         typed_code=payload["typed_code"],
@@ -355,20 +358,144 @@ def interpret_solution(title_slug, payload, api_instance):
         problem=title_slug, body=test_submission
     )
 
-    print("Test has been queued. Result:")
-    print(interpretation_id)
+    # print("Test has been queued. Result:")
+    # print(interpretation_id)
 
-    time.sleep(5)  # FIXME: should probably be a busy-waiting loop
+    time.sleep(3)
 
     test_submission_result = api_instance.submissions_detail_id_check_get(
         id=interpretation_id.interpret_id
     )
 
     print("Got test result:")
-    print(leetcode.TestSubmissionResult(**test_submission_result))
+    # print(leetcode.TestSubmissionResult(**test_submission_result))
+    print_test_result(test_submission_result, payload["data_input"])
 
 
-def initialize_leetcode_api_instance(leetcode_session):
+def print_test_result(test_data, data_input):
+    status_msg = test_data.get("status_msg")
+    status_runtime = test_data.get("status_runtime")
+    code_answer = test_data.get("code_answer")
+    expected_code_answer = test_data.get("expected_code_answer")
+    status_color = Colors.GREEN if status_msg == "Accepted" else Colors.RED
+
+    print("".center(40, "="))
+    print(f"{status_color}{status_msg}{Colors.RESET}     ({status_runtime})")
+    print("".center(40, "="))
+    print("input".center(40, "-"))
+    print(data_input)
+    print("your code output".center(40, "-"))
+    print(code_answer)
+    print("expected output".center(40, "-"))
+    print(expected_code_answer)
+    print("".center(40, "="))
+
+
+# --submit
+def submit_solution(
+        api_instance, title_slug, code, question_id
+):  # used python-leetocde library
+    # Prepare the submission data
+    submission = leetcode.Submission(
+        judge_type="large",
+        typed_code=code,
+        question_id=question_id,
+        test_mode=False,
+        lang="python3",
+    )
+
+    # Submit the code and get the submission ID
+    submission_id = api_instance.problems_problem_submit_post(
+        problem=title_slug, body=submission
+    )
+    print("Submission has been queued. Result:")
+    print(submission_id)
+
+    # Wait for a few seconds for the submission to be processed
+    time.sleep(3)  # FIXME: should probably be a busy-waiting loop
+
+    # Get the submission result
+    submission_result = api_instance.submissions_detail_id_check_get(
+        id=submission_id.submission_id
+    )
+    print("Got submission result:")
+    # print(leetcode.SubmissionResult(**submission_result))
+    print_submission_data(submission_result)
+
+
+def print_submission_data(submission):  # used python-leetocde library
+    run_success = submission.get("run_success")
+    status_msg = submission.get("status_msg")
+
+    if run_success and status_msg == "Accepted":
+        runtime_percentile = submission.get("runtime_percentile")
+        status_runtime = submission.get("status_runtime")
+        status_memory = submission.get("status_memory")
+        # submission_id = submission.get("submission_id")
+        # question_id = submission.get("question_id")
+
+        # Determine the status color and symbol
+        status_symbol = "✔"
+        status_color = Colors.GREEN
+
+        # Format the runtime percentile and status runtime
+        runtime_percentile_str = (
+            f"{runtime_percentile:.2f}%" if runtime_percentile else "N/A"
+        )
+        status_runtime_str = status_runtime.split()[0] if status_runtime else "N/A"
+
+        # Format the status memory
+        status_memory_str = status_memory.split()[0] if status_memory else "N/A"
+
+        print("".center(40, "="))
+        print(f"{status_color}{status_msg}{Colors.RESET}")
+        print("Runtime".center(40, "-"))
+        print(f"{status_runtime_str}ms")
+        print(f"Beats {runtime_percentile_str} of users with Python3")
+        print("Memory".center(40, "-"))
+        print(f"{status_memory_str}mb")
+        print(
+            f"Beats {submission.get('memory_percentile', 0.0):.2f}% of users with Python3"
+        )
+        print("".center(40, "="))
+
+    elif run_success and status_msg == "Wrong Answer":
+        last_testcase = submission.get("last_testcase", "")
+        expected_output = submission.get("expected_output", "")
+        status_color = Colors.RED
+
+        print("".center(40, "="))
+        print(f"{status_color}{status_msg}{Colors.RESET}")
+        print("".center(40, "="))
+        print("last testcase".center(40, "-"))
+        print(last_testcase)
+        print("expected output".center(40, "-"))
+        print(expected_output)
+        print("your output".center(40, "-"))
+        print(submission.get("code_output", ""))
+        print("".center(40, "="))
+
+    elif not run_success:
+        runtime_error = submission.get("runtime_error", "")
+        full_runtime_error = submission.get("full_runtime_error", "")
+        last_testcase = submission.get("last_testcase", "")
+        status_color = Colors.RED
+
+        runtime_error_text = BeautifulSoup(runtime_error, "html.parser")
+        full_runtime_error_text = BeautifulSoup(full_runtime_error, "html.parser")
+
+        print("".center(40, "="))
+        print(f"{status_color}{status_msg}{Colors.RESET}")
+        print("".center(40, "="))
+        print("error".center(40, "-"))
+        print(runtime_error_text)
+        print(full_runtime_error_text)
+        print("last test case".center(40, "-"))
+        print(f"{Colors.RED}{last_testcase}{Colors.RESET}")
+        print("".center(40, "="))
+
+
+def initialize_leetcode_api_instance(leetcode_session):  # used python-leetocde library
     configuration = leetcode.Configuration()
     csrf_token = leetcode.auth.get_csrf_cookie(leetcode_session)
 
@@ -405,11 +532,27 @@ def initialize_leetcode_api_instance(leetcode_session):
     default="",
     help="Specify the filename containing the code and input for testing",
 )
-def main(config, question, solve, test):
+@click.option(
+    "--submit",
+    "-sb",
+    type=str,
+    default="",
+    help="Specify the filename containing the code to be submitted",
+)
+@click.option(
+    "--help", "-h",
+    type=str,
+    help="Specify the filename containing the code to be submitted",
+)
+def main(config, question, solve, test, submit, help):
     if config:
-        leetcode_session, csrf_token = configuratio()
+        leetcode_session, csrf_token = non_lib_configuration()
     else:
         leetcode_session, csrf_token = load_credentials_from_config()
+
+    leetcode_api_instance = initialize_leetcode_api_instance(
+        leetcode_session
+    )  # here using python-leetcode
 
     api_instance = (csrf_token, leetcode_session)
 
@@ -426,19 +569,17 @@ def main(config, question, solve, test):
                 print_question_data(question_item)
         else:
             print(f"Question with ID or title '{question}' not found.")
+
     elif test:
-        leetcode_api_instance = initialize_leetcode_api_instance(
-            leetcode_session
-        )  # here using python-leetcode
-        print(f"Test file: {test}")
+        # print(f"Test file: {test}")
         title_slug = get_title_slug_from_filename(test)
-        print(f"Title slug: {title_slug}")
+        # print(f"Title slug: {title_slug}")
         question_detail_data = get_question_detail(api_instance, title_slug)
         if question_detail_data:
             question_id = question_detail_data.get("questionId")
-            print(f"Question ID: {question_id}")
+            # print(f"Question ID: {question_id}")
             sample_test_case = question_detail_data.get("sampleTestCase")
-            print(f"Sample Test Case: {sample_test_case}")
+            # print(f"Sample Test Case: {sample_test_case}")
 
             with open(test, "r") as file:
                 code = file.read()
@@ -453,6 +594,26 @@ def main(config, question, solve, test):
             interpret_solution(title_slug, payload, leetcode_api_instance)  # used here
         else:
             print(f"Question with title slug '{title_slug}' not found.")
+
+    elif submit:
+        with open(submit, "r") as file:
+            code = file.read()
+
+        title_slug = get_title_slug_from_filename(submit)
+        print(f"Title slug: {title_slug}")
+        question_detail_data = get_question_detail(api_instance, title_slug)
+        if question_detail_data:
+            question_id = question_detail_data.get("questionId")
+            print(f"Question ID: {question_id}")
+            submit_solution(leetcode_api_instance, title_slug, code, question_id)
+
+    elif help:
+        print("enter --question,-q for question details")
+        print("enter --solve,-s for solving question")
+        print("enter --test,-t for testing question")
+        print("enter --submit,-sb for submitting question")
+    else:
+        print("enter --help for usage information")
 
 
 if __name__ == "__main__":
