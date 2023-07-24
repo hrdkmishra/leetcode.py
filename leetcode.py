@@ -647,4 +647,4 @@ def main(config, user_lang, question, solve, test, submit, help):
 
 
 if __name__ == "__main__":
-    main()
+    main() # main
