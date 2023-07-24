@@ -1,4 +1,3 @@
-import os
 import time
 import click
 from bs4 import BeautifulSoup
@@ -10,6 +9,9 @@ from config_setup import (
 import leetcode
 import leetcode.auth
 import requests
+import os
+import shutil
+import glob
 
 
 def non_lib_configuration():  # had to change name becasue of python-leetcode lib
@@ -61,21 +63,42 @@ def print_question_data(question):
 
 def print_test_result(test_data, data_input):
     status_msg = test_data.get("status_msg")
-    status_runtime = test_data.get("status_runtime")
-    code_answer = test_data.get("code_answer")
-    expected_code_answer = test_data.get("expected_code_answer")
-    status_color = Colors.GREEN if status_msg == "Accepted" else Colors.RED
 
-    print("".center(40, "="))
-    print(f"{status_color}{status_msg}{Colors.RESET}     ({status_runtime})")
-    print("".center(40, "="))
-    print("input".center(40, "-"))
-    print(data_input)
-    print("your code output".center(40, "-"))
-    print(code_answer)
-    print("expected output".center(40, "-"))
-    print(expected_code_answer)
-    print("".center(40, "="))
+    if status_msg == "Accepted":
+        status_runtime = test_data.get("status_runtime")
+        code_answer = test_data.get("code_answer")
+        expected_code_answer = test_data.get("expected_code_answer")
+        status_color = Colors.GREEN
+
+        print("".center(40, "="))
+        print(f"{status_color}{status_msg}{Colors.RESET}     ({status_runtime})")
+        print("".center(40, "="))
+        print("input".center(40, "-"))
+        print(data_input)
+        print("your code output".center(40, "-"))
+        print(code_answer)
+        print("expected output".center(40, "-"))
+        print(expected_code_answer)
+        print("".center(40, "="))
+    else:
+        runtime_error = test_data.get("runtime_error")
+        full_runtime_error = test_data.get("full_runtime_error")
+        status_color = Colors.RED
+
+        # Use BeautifulSoup to convert the runtime error message from HTML to plain text
+        soup = BeautifulSoup(full_runtime_error, "html.parser")
+        plain_runtime_error = soup.get_text()
+
+        print("".center(40, "="))
+        print(f"{status_color}{status_msg}{Colors.RESET}")
+        print("".center(40, "="))
+        print("input".center(40, "-"))
+        print(data_input)
+        print("runtime error".center(40, "-"))
+        print(runtime_error)
+        print("full runtime error".center(40, "-"))
+        print(plain_runtime_error)
+        print("".center(40, "="))
 
 
 def print_submission_result(submission):  # used python-leetocde library
@@ -144,7 +167,8 @@ def print_submission_result(submission):  # used python-leetocde library
 def initialize_leetcode_api_instance(
         leetcode_session, leetcode_csrf_token
 ):  # used python-leetocde library
-    configuration = leetcode.Configuration()
+    configuration = leetcode \
+        .Configuration()
     csrf_token = leetcode_csrf_token
 
     configuration.api_key["x-csrftoken"] = csrf_token
@@ -153,12 +177,15 @@ def initialize_leetcode_api_instance(
     configuration.api_key["Referer"] = "https://leetcode.com"
     configuration.debug = False
 
-    api_instance = leetcode.DefaultApi(leetcode.ApiClient(configuration))
+    api_instance = leetcode \
+        .DefaultApi(leetcode
+                    .ApiClient(configuration))
     return api_instance
 
 
 def interpret_solution(title_slug, payload, api_instance):
-    test_submission = leetcode.TestSubmission(
+    test_submission = leetcode \
+        .TestSubmission(
         data_input=payload["data_input"],
         typed_code=payload["typed_code"],
         question_id=payload["question_id"],
@@ -199,7 +226,6 @@ def submit_solution(
 
 def process_test_file(leetcode_api_instance, api_instance, test):
     title_slug, lang_name = title_and_file_extension(test)
-    print(lang_name)
     question_detail_data = get_question_detail(api_instance, title_slug)
     if question_detail_data:
         question_id = question_detail_data.get("questionId")
@@ -477,6 +503,8 @@ def write_code_snippet_to_file(question_detail_data, lang, title_slug):
     if code:
         lang_extension = LANG_EXTENSIONS.get(lang)
         if lang_extension:
+            if not os.path.exists("code_editor"):
+                os.makedirs("code_editor")
             file_path = os.path.join(
                 "code_editor",
                 f"{question_detail_data['questionFrontendId']}_{title_slug}.{lang_extension}",
@@ -540,28 +568,54 @@ def title_and_file_extension(file):
 
 def print_help_usage():
     help_message = """
+    IMPORTANT: python lc.py --lib
+    
     Usage:
-        python leetcode.py --config
-        python leetcode.py --config --user-lang <language>
-        python leetcode.py --question/-q <question_id_or_title>
-        python leetcode.py --solve <question_id_or_title>
-        python leetcode.py --test/-t <filename>
-        python leetcode.py --submit/-sb <filename>
+        python lc.py --config
+        python lc.py --config --user-lang <language>
+        python lc.py --question/-q <question_id_or_title>
+        python lc.py --solve <question_id_or_title>
+        python lc.py --test/-t <filename>
+        python lc.py --submit/-sb <filename>
 
     Examples:
-        python leetcode.py --config --user-lang=python3
-        python leetcode.py --question 1
-        python leetcode.py --question add-two-numbers
-        python leetcode.py --question 10:20
-        python leetcode.py --solve/-s add-two-numbers
-        python leetcode.py --solve 1
-        python leetcode.py --test test_file.py
-        python leetcode.py --submit submit_file.py
+        python lc.py --config --user-lang=python3
+        python lc.py --question 1
+        python lc.py --question add-two-numbers
+        python lc.py --question 10:20
+        python lc.py --solve/-s add-two-numbers
+        python lc.py --solve 1
+        python lc.py --test test_file.py
+        python lc.py --submit submit_file.py
 
     For any issues or feature requests, please visit:
     https://github.com/hrdkmishra/leetcode.py
     """
     print(help_message)
+
+
+def replace_files():
+    source_dir = "custom_lib_file/"
+    destination_dir = "venv/Lib/site-packages/leetcode/models/"
+    file_paths = glob.glob(os.path.join(source_dir, "*"))
+
+    if not file_paths:
+        print(f"No files found in the source directory '{source_dir}'.")
+        return
+
+    for src_path in file_paths:
+        filename = os.path.basename(src_path)
+        dest_path = os.path.join(destination_dir, filename)
+
+        if os.path.exists(dest_path):
+            try:
+                os.remove(dest_path)
+                shutil.copy(src_path, dest_path)
+                print(f"File '{src_path}' replaced successfully.")
+            except Exception as e:
+                print(f"An error occurred while replacing the file: {e}")
+        else:
+            print(f"Destination path '{dest_path}' does not exist.")
 
 
 @click.command()
@@ -571,6 +625,9 @@ def print_help_usage():
     type=str,
     default="",
     help="Set user preferred language (e.g., python3)",
+)
+@click.option(
+    "--lib", is_flag=True, default=False, help="Show usage information"
 )
 @click.option(
     "--question",
@@ -603,13 +660,16 @@ def print_help_usage():
 @click.option(
     "--help", "-h", is_flag=True, default=False, help="Show usage information"
 )
-def main(config, user_lang, question, solve, test, submit, help):
+def main(config, user_lang, question, solve, test, submit, help, lib):
+    if lib:
+        replace_files()
+        exit()
     if config:
         leetcode_session, csrf_token = non_lib_configuration()
         # If the --user-lang option is provided, save it to config
         if user_lang:
             save_user_data_to_config(user_lang)
-        exit()
+            exit()
     else:
         leetcode_session, csrf_token = load_credentials_from_config()
 
@@ -647,4 +707,4 @@ def main(config, user_lang, question, solve, test, submit, help):
 
 
 if __name__ == "__main__":
-    main() # main
+    main()

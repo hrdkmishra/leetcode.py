@@ -16,7 +16,9 @@ import re  # noqa: F401
 import six
 
 
-class BaseSubmissionResult(object):
+
+class BaseSubmissionResult(object): #modified
+
     """
     Attributes:
       swagger_types (dict): The key is attribute name
