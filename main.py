@@ -352,7 +352,7 @@ def interpret_solution(
         typed_code=payload["typed_code"],
         question_id=payload["question_id"],
         test_mode=False,
-        lang="python3",
+        lang="python3",  #change this
     )
     interpretation_id = api_instance.problems_problem_interpret_solution_post(
         problem=title_slug, body=test_submission
@@ -401,7 +401,7 @@ def submit_solution(
         typed_code=code,
         question_id=question_id,
         test_mode=False,
-        lang="python3",
+        lang="python3", #change this
     )
 
     # Submit the code and get the submission ID
@@ -585,7 +585,7 @@ def main(config, question, solve, test, submit, help):
                 code = file.read()
 
             payload = {
-                "lang": "python3",
+                "lang": "python3", #change htis
                 "question_id": question_id,
                 "typed_code": code,
                 "data_input": sample_test_case,
