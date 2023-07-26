@@ -167,25 +167,20 @@ def print_submission_result(submission):  # used python-leetocde library
 def initialize_leetcode_api_instance(
         leetcode_session, leetcode_csrf_token
 ):  # used python-leetocde library
-    configuration = leetcode \
-        .Configuration()
+    configuration = leetcode.Configuration()
     csrf_token = leetcode_csrf_token
-
     configuration.api_key["x-csrftoken"] = csrf_token
     configuration.api_key["csrftoken"] = csrf_token
     configuration.api_key["LEETCODE_SESSION"] = leetcode_session
-    configuration.api_key["Referer"] = "https://leetcode.com"
+    configuration.api_key["Referer"] = "https://.com"
     configuration.debug = False
 
-    api_instance = leetcode \
-        .DefaultApi(leetcode
-                    .ApiClient(configuration))
+    api_instance = .DefaultApi(.ApiClient(configuration))
     return api_instance
 
 
 def interpret_solution(title_slug, payload, api_instance):
-    test_submission = leetcode \
-        .TestSubmission(
+    test_submission = .TestSubmission(
         data_input=payload["data_input"],
         typed_code=payload["typed_code"],
         question_id=payload["question_id"],
