@@ -180,7 +180,7 @@ def initialize_leetcode_api_instance(
 
 
 def interpret_solution(title_slug, payload, api_instance):
-    test_submission = .TestSubmission(
+    test_submission = leetcode.TestSubmission(
         data_input=payload["data_input"],
         typed_code=payload["typed_code"],
         question_id=payload["question_id"],
