@@ -14,7 +14,7 @@ import shutil
 import glob
 
 
-def non_lib_configuration():  # had to change name becasue of python-leetcode lib
+def non_lib_configuration():  # had to change name because of python-leetcode lib
     leetcode_session, csrf_token = load_credentials_from_config()
     if not leetcode_session or not csrf_token:
         leetcode_session = click.prompt("Enter your LeetCode session", type=str)
@@ -101,7 +101,7 @@ def print_test_result(test_data, data_input):
         print("".center(40, "="))
 
 
-def print_submission_result(submission):  # used python-leetocde library
+def print_submission_result(submission):  # used python-leetcode library
     run_success = submission.get("run_success")
     status_msg = submission.get("status_msg")
     if run_success and status_msg == "Accepted":
@@ -166,7 +166,7 @@ def print_submission_result(submission):  # used python-leetocde library
 
 def initialize_leetcode_api_instance(
         leetcode_session, leetcode_csrf_token
-):  # used python-leetocde library
+):  # used python-leetcode library
     configuration = leetcode.Configuration()
     csrf_token = leetcode_csrf_token
     configuration.api_key["x-csrftoken"] = csrf_token
@@ -175,7 +175,7 @@ def initialize_leetcode_api_instance(
     configuration.api_key["Referer"] = "https://.com"
     configuration.debug = False
 
-    api_instance = .DefaultApi(.ApiClient(configuration))
+    api_instance = leetcode.DefaultApi(leetcode.ApiClient(configuration))
     return api_instance
 
 
@@ -200,7 +200,7 @@ def interpret_solution(title_slug, payload, api_instance):
 # --submit
 def submit_solution(
         api_instance, title_slug, code, question_id, lang_name
-):  # used python-leetocde library
+):  # used python-leetcode library
     submission = leetcode.Submission(
         judge_type="large",
         typed_code=code,
@@ -655,7 +655,7 @@ def replace_files():
 @click.option(
     "--help", "-h", is_flag=True, default=False, help="Show usage information"
 )
-def main(config, user_lang, question, solve, test, submit, help, lib):
+def main(config, user_lang, question, solve, test, submit, help_cmd, lib):
     if lib:
         replace_files()
         exit()
@@ -693,7 +693,7 @@ def main(config, user_lang, question, solve, test, submit, help, lib):
             leetcode_session, csrf_token
         )
         process_submit_file(leetcode_api_instance, api_instance, submit)
-    elif help:
+    elif help_cmd:
         print_help_usage()
     else:
         print(
