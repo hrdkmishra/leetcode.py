@@ -4,7 +4,9 @@ from bs4 import BeautifulSoup
 from color import Colors
 from config_setup import (
     save_credentials_to_config,
-    load_credentials_from_config, load_user_data_from_config, save_user_data_to_config,
+    load_credentials_from_config,
+    load_user_data_from_config,
+    save_user_data_to_config,
 )
 import leetcode
 import leetcode.auth
@@ -165,7 +167,7 @@ def print_submission_result(submission):  # used python-leetcode library
 
 
 def initialize_leetcode_api_instance(
-        leetcode_session, leetcode_csrf_token
+    leetcode_session, leetcode_csrf_token
 ):  # used python-leetcode library
     configuration = leetcode.Configuration()
     csrf_token = leetcode_csrf_token
@@ -199,7 +201,7 @@ def interpret_solution(title_slug, payload, api_instance):
 
 # --submit
 def submit_solution(
-        api_instance, title_slug, code, question_id, lang_name
+    api_instance, title_slug, code, question_id, lang_name
 ):  # used python-leetcode library
     submission = leetcode.Submission(
         judge_type="large",
@@ -335,9 +337,9 @@ def get_question_data_by_id(api_instance, q):
     api_response = execute_graphql_query(api_instance, data)
 
     if (
-            api_response
-            and "data" in api_response
-            and "problemsetQuestionList" in api_response["data"]
+        api_response
+        and "data" in api_response
+        and "problemsetQuestionList" in api_response["data"]
     ):
         return api_response["data"]["problemsetQuestionList"]["questions"]
     return None
@@ -472,20 +474,28 @@ def display_question_detail(api_instance, title_slug):
         if user_lang:
             write_code_snippet_to_file(question_detail_data, user_lang, title_slug)
         else:
-            available_languages = get_available_languages_and_code_snippets(question_detail_data)
+            available_languages = get_available_languages_and_code_snippets(
+                question_detail_data
+            )
             if not available_languages:
                 print("No code snippets available.")
                 return
             print("Available Languages:")
             for index, (lang_slug, lang_name) in enumerate(available_languages, 1):
                 print(f"{index}. {lang_slug}")
-            lang_input = input("Enter the displayed index of the language you want to code: ").strip().lower()
+            lang_input = (
+                input("Enter the displayed index of the language you want to code: ")
+                .strip()
+                .lower()
+            )
             try:
                 lang_index = int(lang_input)
                 if 1 <= lang_index <= len(available_languages):
                     selected_lang = available_languages[lang_index - 1][0]
                     print(selected_lang)
-                    write_code_snippet_to_file(question_detail_data, selected_lang, title_slug)
+                    write_code_snippet_to_file(
+                        question_detail_data, selected_lang, title_slug
+                    )
                 else:
                     print("Invalid index. Please enter a valid index.")
             except ValueError:
@@ -494,7 +504,10 @@ def display_question_detail(api_instance, title_slug):
 
 def write_code_snippet_to_file(question_detail_data, lang, title_slug):
     code_snippets = question_detail_data.get("codeSnippets", [])
-    code = next((snippet["code"] for snippet in code_snippets if snippet["langSlug"] == lang), None)
+    code = next(
+        (snippet["code"] for snippet in code_snippets if snippet["langSlug"] == lang),
+        None,
+    )
     if code:
         lang_extension = LANG_EXTENSIONS.get(lang)
         if lang_extension:
@@ -621,9 +634,7 @@ def replace_files():
     default="",
     help="Set user preferred language (e.g., python3)",
 )
-@click.option(
-    "--lib", is_flag=True, default=False, help="Show usage information"
-)
+@click.option("--lib", is_flag=True, default=False, help="Show usage information")
 @click.option(
     "--question",
     "-q",
