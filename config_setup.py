@@ -22,7 +22,7 @@ def load_user_data_from_config():
     if os.path.exists(CONFIG_FILE_PATH):
         with open(CONFIG_FILE_PATH, "r") as config_file:
             config_data = toml.load(config_file)
-        return config_data.get("USER_LANG", "").lower()
+        return config_data.get("USER_LANG", "").lower() , config_data.get("EDITOR_CLI", "").lower()
     return None
 
 
