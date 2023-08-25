@@ -661,6 +661,7 @@ def main(config, user_lang, user_path ,question, solve, test, submit, lib,help):
         if user_lang:
             save_user_data_to_config(user_lang)
             exit()
+	#allow user to enter their preferred path
         elif user_path:
             save_user_path_to_config(user_path)
             exit()
