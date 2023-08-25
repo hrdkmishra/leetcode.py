@@ -38,7 +38,7 @@ def print_question_data(question):
     elif difficulty == "Hard":
         difficulty_color = Colors.RED
     title_width = 50
-    difficulty_width = 10
+    difficulty_width = 1
     title_formatted = title.ljust(title_width)[:title_width]
     difficulty_formatted = (
         f"{difficulty_color}{difficulty.ljust(difficulty_width)}{Colors.RESET}"
@@ -455,7 +455,7 @@ def get_available_languages_and_code_snippets(question_detail_data):
     return available_languages
 
 
-def display_question_detail(api_instance, title_slug): #did changes here
+def display_question_detail(api_instance, title_slug):  # did changes here
     question_detail_data = get_question_detail(api_instance, title_slug)
     if question_detail_data:
         question_url = f"https://leetcode.com/problems/{title_slug}/"
@@ -465,12 +465,17 @@ def display_question_detail(api_instance, title_slug): #did changes here
         content_text = BeautifulSoup(content_html, "html.parser").get_text()
         print("Question Content:\n", content_text)
 
-        user_lang,editor_cli = load_user_data_from_config()  # Load the USER_LANG from config
+        (
+            user_lang,
+            editor_cli,
+        ) = load_user_data_from_config()  # Load the USER_LANG from config
         if user_lang:
-            file_path = write_code_snippet_to_file(question_detail_data, user_lang, title_slug)
+            file_path = write_code_snippet_to_file(
+                question_detail_data, user_lang, title_slug
+            )
             # write_code_snippet_to_file(question_detail_data, user_lang, title_slug)
             input("Press any key to continue...")
-            os.system(f"{editor_cli} {file_path}")    
+            os.system(f"{editor_cli} {file_path}")
         else:
             available_languages = get_available_languages_and_code_snippets(
                 question_detail_data
@@ -499,8 +504,6 @@ def display_question_detail(api_instance, title_slug): #did changes here
             except ValueError:
                 print("Invalid input. Please enter a valid index.")
 
-        
-
 
 def write_code_snippet_to_file(question_detail_data, lang, title_slug):  # tags:path
     code_snippets = question_detail_data.get("codeSnippets", [])
@@ -517,7 +520,7 @@ def write_code_snippet_to_file(question_detail_data, lang, title_slug):  # tags:
                 leetcode_folder = os.path.join(home_directory, ".leetcode")
             else:
                 leetcode_folder = leetcode_path
-                
+
             if not os.path.exists(leetcode_folder):
                 os.makedirs(leetcode_folder)
             file_path = os.path.join(
@@ -532,7 +535,6 @@ def write_code_snippet_to_file(question_detail_data, lang, title_slug):  # tags:
             print(f"Language extension for {lang} is not available.")
     else:
         print(f"Code snippet for {lang} is not available for this question.")
-
 
 
 def get_title_slug_from_filename(filepath):
@@ -649,9 +651,11 @@ def replace_files():
     help="Specify the filename containing the code to be submitted",
 )
 @click.option(
-    "--help","-h" ,is_flag=True, default=False, help="Show usage information"
+    "--help", "-h", is_flag=True, default=False, help="Show usage information"
 )
-def main(config, user_lang, user_path ,question, solve, test, submit, lib,help): # remove help_cmd
+def main(
+    config, user_lang, user_path, question, solve, test, submit, lib, help
+):  # remove help_cmd
     if lib:
         replace_files()
         exit()
@@ -661,7 +665,7 @@ def main(config, user_lang, user_path ,question, solve, test, submit, lib,help):
         if user_lang:
             save_user_data_to_config(user_lang)
             exit()
-	#allow user to enter their preferred path
+        # allow user to enter their preferred path
         elif user_path:
             save_user_path_to_config(user_path)
             exit()
