@@ -2,12 +2,7 @@ import time
 import click
 from bs4 import BeautifulSoup
 from color import Colors
-from config_setup import (
-    save_credentials_to_config,
-    load_credentials_from_config,
-    load_user_data_from_config,
-    save_user_data_to_config,
-)
+from config_setup import *
 import leetcode
 import leetcode.auth
 import requests
@@ -507,7 +502,7 @@ def display_question_detail(api_instance, title_slug): #did changes here
         
 
 
-def write_code_snippet_to_file(question_detail_data, lang, title_slug):
+def write_code_snippet_to_file(question_detail_data, lang, title_slug):  # tags:path
     code_snippets = question_detail_data.get("codeSnippets", [])
     code = next(
         (snippet["code"] for snippet in code_snippets if snippet["langSlug"] == lang),
@@ -516,8 +511,13 @@ def write_code_snippet_to_file(question_detail_data, lang, title_slug):
     if code:
         lang_extension = LANG_EXTENSIONS.get(lang)
         if lang_extension:
-            home_directory = os.path.expanduser("~")
-            leetcode_folder = os.path.join(home_directory, ".leetcode")
+            leetcode_path = load_user_path_from_config()
+            if not leetcode_path:
+                home_directory = os.path.expanduser("~")
+                leetcode_folder = os.path.join(home_directory, ".leetcode")
+            else:
+                leetcode_folder = leetcode_path
+                
             if not os.path.exists(leetcode_folder):
                 os.makedirs(leetcode_folder)
             file_path = os.path.join(
@@ -532,6 +532,7 @@ def write_code_snippet_to_file(question_detail_data, lang, title_slug):
             print(f"Language extension for {lang} is not available.")
     else:
         print(f"Code snippet for {lang} is not available for this question.")
+
 
 
 def get_title_slug_from_filename(filepath):
@@ -551,32 +552,33 @@ def title_and_file_extension(file):
     return title_slug, lang_name
 
 
-# def print_help_usage():
-#     help_message = """
-#     IMPORTANT: python main.py --lib
+def print_help_usage():
+    help_message = """
+    IMPORTANT: python main.py --lib
     
-#     Usage:
-#         python main.py --config
-#         python main.py --config --user-lang <language>
-#         python main.py --question/-q <question_id_or_title>
-#         python main.py --solve <question_id_or_title>
-#         python main.py --test/-t <filename>
-#         python main.py --submit/-sb <filename>
+    Usage:
+        python main.py --config
+        python main.py --config --user-lang <language>
+        python main.py --question/-q <question_id_or_title>
+        python main.py --solve <question_id_or_title>
+        python main.py --test/-t <filename>
+        python main.py --submit/-sb <filename>
 
-#     Examples:
-#         python main.py --config --user-lang=python3
-#         python main.py --question 1
-#         python main.py --question add-two-numbers
-#         python main.py --question 10:20
-#         python main.py --solve/-s add-two-numbers
-#         python main.py --solve 1
-#         python main.py --test test_file.py
-#         python main.py --submit submit_file.py
+    Examples:
+        python main.py --config --user-lang=python3
+        python main.py --config --user-path=/d/prog/lc
+        python main.py --question 1
+        python main.py --question add-two-numbers
+        python main.py --question 10:20
+        python main.py --solve/-s add-two-numbers
+        python main.py --solve 1
+        python main.py --test test_file.py
+        python main.py --submit submit_file.py
 
-#     For any issues or feature requests, please visit:
-#     https://github.com/hrdkmishra/leetcode.py
-#     """
-#     print(help_message)
+    For any issues or feature requests, please visit:
+    https://github.com/hrdkmishra/leetcode.py
+    """
+    print(help_message)
 
 
 def replace_files():
@@ -611,6 +613,12 @@ def replace_files():
     default="",
     help="Set user preferred language (e.g., python3)",
 )
+@click.option(
+    "--user-path",
+    type=str,
+    default="",
+    help="Set user preferred path",
+)
 @click.option("--lib", is_flag=True, default=False, help="Show usage information")
 @click.option(
     "--question",
@@ -640,10 +648,10 @@ def replace_files():
     default="",
     help="Specify the filename containing the code to be submitted",
 )
-# @click.option(
-#     "--kelp","-k" ,is_flag=True, default=False, help="Show usage information"
-# )
-def main(config, user_lang, question, solve, test, submit, lib): # remove help_cmd
+@click.option(
+    "--help","-h" ,is_flag=True, default=False, help="Show usage information"
+)
+def main(config, user_lang, user_path ,question, solve, test, submit, lib,help): # remove help_cmd
     if lib:
         replace_files()
         exit()
@@ -652,6 +660,9 @@ def main(config, user_lang, question, solve, test, submit, lib): # remove help_c
         # If the --user-lang option is provided, save it to config
         if user_lang:
             save_user_data_to_config(user_lang)
+            exit()
+        elif user_path:
+            save_user_path_to_config(user_path)
             exit()
     else:
         leetcode_session, csrf_token = load_credentials_from_config()
@@ -681,8 +692,8 @@ def main(config, user_lang, question, solve, test, submit, lib): # remove help_c
             leetcode_session, csrf_token
         )
         process_submit_file(leetcode_api_instance, api_instance, submit)
-    # elif help_cmd:
-    #     print_help_usage()
+    elif help:
+        print_help_usage()
     else:
         print(
             "Please provide valid command line options. Use --help for usage information."
